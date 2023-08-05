@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  postgres:
+    build:
+      context: ./Postgres
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_DB=mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./Postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    expose: [5432]
+
+  api:
+    build:
+      context: ./Flask
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    command: sh -c "sleep 10 && python app.py"
+    expose: [5000]
+
+
+  etl:
+    build:
+      context: ./Python
+      dockerfile: Dockerfile
+    volumes:
+      - ./Python:/app
+    depends_on:
+      - postgres
+    command: sh -c "sleep 10 && python main.py && cron -f"
+
